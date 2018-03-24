@@ -2,65 +2,78 @@
 
 using namespace std;
 
-using ulong = unsigned long;
-
 template<typename T>
 void compare(T&& a, T&& b) {
   if (a > b)
     swap(a, b);
 }
 
-void unshuffle(ulong* a, ulong l, ulong r) {
-  long half = (r - l) / 2;
-  ulong b[r - l];
-  for (ulong i = 0; i < half; i++) {
-    b[i] = a[l + 2*i];
-    b[i + half] = a[l + 2*i + 1];
+template<typename T>
+class Sorter {
+private:
+  T* data;
+  T* memory;
+  
+  void unshuffle(size_t l, size_t r) {
+    size_t half = (r - l) / 2;
+    for (size_t i = 0; i < half; i++) {
+      memory[i] = data[l + 2*i];
+      memory[i + half] = data[l + 2*i + 1];
+    }
+
+    for (size_t i = l; i < r; i++) {
+      data[i] = memory[i - l];
+    }
   }
 
-  for (ulong i = l; i < r; i++) {
-    a[i] = b[i - l];
+  void shuffle(size_t l, size_t r) {
+    size_t half = (r - l) / 2;
+    for (size_t i = 0; i < half; i++) {
+      memory[2*i] = data[l + i];
+      memory[2*i + 1] = data[l + i + half];
+    }
+    for (size_t i = l; i < r; i++) {
+      data[i] = memory[i - l];
+    }
   }
-}
 
-void shuffle(ulong* a, ulong l, ulong r) {
-  long half = (r - l) / 2;
-  ulong b[r - l];
-  for (ulong i = 0; i < half; i++) {
-    b[2*i] = a[l + i];
-    b[2*i + 1] = a[l + i + half];
+  void my_merge(size_t l, size_t r) {
+    if ((r - l) > 2) {
+      size_t m = l + (r - l) / 2;
+      unshuffle(l, r);
+      my_merge(l, m);
+      my_merge(m, r);
+      shuffle(l, r);
+
+      for (size_t i = l + 1; i < r - 1; i += 2)
+        compare(data[i], data[i + 1]);
+    } else {
+      compare(data[l], data[l + 1]);
+    }
   }
-  for (ulong i = l; i < r; i++) {
-    a[i] = b[i - l];
+
+public:
+  Sorter(T* a, size_t size) {
+    data = a;
+    memory = new T[size];
   }
-}
 
-static void my_merge(ulong* a, ulong l, ulong r);
-
-void my_sort(ulong* a, ulong l, ulong r) {
-  if ((r - l) > 1) {
-    ulong m = l + (r - l) / 2;
-    my_sort(a, l, m);
-    my_sort(a, m, r);
-    my_merge(a, l, r);
+  void my_sort(size_t l, size_t r) {
+    if ((r - l) > 1) {
+      size_t m = l + (r - l) / 2;
+      my_sort(l, m);
+      my_sort(m, r);
+      my_merge(l, r);
+    }
   }
-}
 
-static void my_merge(ulong* a, ulong l, ulong r) {
-  ulong m = l + (r - l) / 2;
-  if ((r - l) > 2) {
-    unshuffle(a, l, r);
-    my_merge(a, l, m);
-    my_merge(a, m, r);
-    shuffle(a, l, r);
-
-    for (ulong i = l + 1; i < r - 1; i+=2)
-      compare(a[i], a[i + 1]);
-  } else {
-    compare(a[l], a[l+1]);
+  ~Sorter() {
+    delete [] memory;
   }
-}
+};
 
-void my_sort(ulong* a, ulong size) {
-  my_sort(a, 0, size);
+template <typename T>
+void my_sort(T* a, size_t size) {
+  Sorter<T> sorter(a, size);
+  sorter.my_sort(0, size);
 }

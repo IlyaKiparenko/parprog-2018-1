@@ -2,6 +2,7 @@
 #include <cmath>
 #include <string>
 #include <iostream>
+#include <vector>
 using namespace std;
 
 // Используется для взаимодействия с тестирующей системой
@@ -66,9 +67,10 @@ class result {
 ////////////////////////////////////////////////////////////////////////////////////////////
 using namespace std;
 
-using ulong = unsigned long;
 int main(int argc, char** argv) {
-  const int lsize = sizeof (ulong);
+  using T = double;
+  const int tsize = sizeof (T);
+  const int isize = sizeof (size_t);
   if (argc < 2) {
     cout << "Wrong args\n";
     return 1;
@@ -78,23 +80,31 @@ int main(int argc, char** argv) {
 
   FILE* solution_is = fopen((name + ".solution").c_str(), "rb");
   FILE* answer_is = fopen((name + ".answer").c_str(), "rb");
+  
+  if (answer_is == 0 || solution_is == 0) {
+    cout << "Wrong files\n";
+    return 1;
+  }
 
-  ulong n1, n2;
+  size_t n1, n2;
   fread(&res_time, sizeof (res_time), 1, solution_is);
-  fread(&n1, lsize, 1, solution_is);
-  fread(&n2, lsize, 1, answer_is);
+  fread(&n1, isize, 1, solution_is);
+  fread(&n2, isize, 1, answer_is);
 
   bool result = (n1 == n2);
 
   if (result) {
-    ulong n = n1;
-    ulong data1[n], data2[n];
+    size_t n = n1;
+    vector<T> v1(n), v2(n);
 
-    fread(data1, lsize, n, solution_is);
-    fread(data2, lsize, n, answer_is);
+    fread(v1.data(), tsize, n, solution_is);
+    fread(v2.data(), tsize, n, answer_is);
+    
+    fclose(solution_is);
+    fclose(answer_is);
 
-    for (ulong i = 0; i < n; i++)
-      if (data1[i] != data2[i]) {
+    for (size_t i = 0; i < n; i++)
+      if (v1[i] != v2[i]) {
         result = false;
         break;
       }
